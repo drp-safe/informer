@@ -1,0 +1,41 @@
+# Exemple de déploiement : inventaire quotidien du namespace `pra`, envoyé à
+# une API externe. Appliquer avec :
+#   kubectl apply -k deploy/kustomize/example/
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: pra
+
+resources:
+  - ../base
+
+images:
+  - name: ghcr.io/drp-safe/informer
+    newTag: "1.0.0"
+
+configMapGenerator:
+  - name: informer-config
+    behavior: merge
+    literals:
+      - REPORT_URL=https://inventory.example.com/api/images
+      - TARGET_NAMESPACE=pra
+
+# Fichier non versionné (voir informer.secrets.env.example) contenant
+# REPORT_TOKEN=<jeton Bearer attendu par l'API destinataire>.
+secretGenerator:
+  - name: informer-secrets
+    envs:
+      - informer.secrets.env
+
+# Même précaution que dans la base : le label d'environnement ne doit pas
+# entrer dans les sélecteurs (règle DNS vers kube-system).
+labels:
+  - pairs:
+      env: production
+    includeSelectors: false
+
+patches:
+  - path: networkpolicy-patch.yaml
+    target:
+      kind: NetworkPolicy
+      name: informer

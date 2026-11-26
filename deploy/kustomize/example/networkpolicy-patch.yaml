@@ -1,0 +1,20 @@
+# Adresses réelles de l'environnement, à la place des valeurs de
+# documentation de la base. Les rangs visés : 1 = API server, 2 = API destinataire.
+
+# API server : endpoints du service `kubernetes` (IP des nœuds RKE2, port 6443).
+- op: replace
+  path: /spec/egress/1/to
+  value:
+    - ipBlock:
+        cidr: 164.132.46.19/32
+    - ipBlock:
+        cidr: 164.132.46.20/32
+    - ipBlock:
+        cidr: 51.254.206.114/32
+
+# API destinataire : IP publique de inventory.example.com (à adapter).
+- op: replace
+  path: /spec/egress/2/to
+  value:
+    - ipBlock:
+        cidr: 203.0.113.10/32

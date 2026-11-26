@@ -1,0 +1,6 @@
+/informer
+*.test
+.env
+*.dec.env
+# Secrets de l'overlay d'exemple : seul le modèle .example est versionné.
+*.secrets.env

@@ -1,0 +1,11 @@
+# Droit minimal : lister les pods du namespace cible, rien d'autre (ni get,
+# ni watch, ni secrets). Si le namespace cible diffère de celui du CronJob,
+# ce Role et son RoleBinding doivent être créés dans le namespace cible.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: informer-pod-lister
+rules:
+  - apiGroups: [""]
+    resources: ["pods"]
+    verbs: ["list"]
