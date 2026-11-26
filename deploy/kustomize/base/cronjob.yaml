@@ -1,0 +1,52 @@
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: informer
+spec:
+  schedule: "0 3 * * *"
+  timeZone: Europe/Paris
+  concurrencyPolicy: Forbid
+  successfulJobsHistoryLimit: 1
+  failedJobsHistoryLimit: 3
+  jobTemplate:
+    spec:
+      backoffLimit: 2
+      activeDeadlineSeconds: 300
+      ttlSecondsAfterFinished: 86400
+      template:
+        metadata:
+          labels:
+            app: informer
+        spec:
+          serviceAccountName: informer
+          automountServiceAccountToken: true
+          restartPolicy: Never
+          securityContext:
+            runAsNonRoot: true
+            runAsUser: 1001
+            runAsGroup: 1001
+            seccompProfile:
+              type: RuntimeDefault
+          containers:
+            - name: informer
+              image: ghcr.io/drp-safe/informer
+              envFrom:
+                - configMapRef:
+                    name: informer-config
+              env:
+                - name: REPORT_TOKEN
+                  valueFrom:
+                    secretKeyRef:
+                      name: informer-secrets
+                      key: REPORT_TOKEN
+              securityContext:
+                allowPrivilegeEscalation: false
+                readOnlyRootFilesystem: true
+                capabilities:
+                  drop: ["ALL"]
+              resources:
+                requests:
+                  cpu: 10m
+                  memory: 32Mi
+                limits:
+                  memory: 128Mi

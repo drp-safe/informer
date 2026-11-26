@@ -1,0 +1,7 @@
+.git
+.github
+deploy
+*.secrets.env
+*.dec.env
+/informer
+README.md

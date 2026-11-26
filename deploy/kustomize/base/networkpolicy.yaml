@@ -1,0 +1,57 @@
+# Politique la plus fermée possible : aucune entrée, et en sortie seulement
+# le DNS, l'API server et l'API destinataire du listing.
+#
+# Les adresses ci-dessous sont des valeurs de documentation (192.0.2.0/24,
+# RFC 5737) : l'overlay les remplace par celles de l'environnement. Les règles
+# sont repérées par leur rang (0 = DNS, 1 = API server, 2 = API destinataire),
+# que les patchs JSON de l'overlay visent.
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: informer
+spec:
+  podSelector:
+    matchLabels:
+      app: informer
+  policyTypes:
+    - Ingress
+    - Egress
+  # Pas de règle ingress : le pod n'écoute rien, tout entrant est refusé.
+  egress:
+    # 0 — Résolution DNS (CoreDNS).
+    - to:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: kube-system
+          podSelector:
+            matchLabels:
+              k8s-app: kube-dns
+      ports:
+        - protocol: UDP
+          port: 53
+        - protocol: TCP
+          port: 53
+    # 1 — API server. La NetworkPolicy s'évalue APRÈS la traduction d'adresse :
+    # la ClusterIP du service `kubernetes` (port 443) est déjà remplacée par
+    # ses endpoints réels, c'est-à-dire les IP des nœuds du plan de contrôle
+    # sur le port 6443. Viser la ClusterIP ou le port 443 ne laisserait rien
+    # passer. Valeurs : `kubectl get endpointslices -n default -l kubernetes.io/service-name=kubernetes`.
+    - to:
+        - ipBlock:
+            cidr: 192.0.2.1/32
+      ports:
+        - protocol: TCP
+          port: 6443
+    # 2 — API destinataire du listing (POST HTTPS).
+    #   - Cible externe : son IP publique en /32, port 443.
+    #   - Cible dans le cluster : remplacer l'ipBlock par namespaceSelector +
+    #     podSelector du service, et le port par celui du CONTENEUR (pas du Service).
+    #   - Cible du cluster jointe par son nom public : elle résout vers une IP de
+    #     nœud, et Envoy redirige le hostPort 443 vers 10443 avant l'évaluation
+    #     de la règle. Il faut alors les IP des nœuds et le port 10443.
+    - to:
+        - ipBlock:
+            cidr: 192.0.2.2/32
+      ports:
+        - protocol: TCP
+          port: 443
