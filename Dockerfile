@@ -8,7 +8,8 @@ RUN CGO_ENABLED=0 GOOS=linux go build -trimpath -ldflags="-s -w" -o /app/informe
 
 FROM alpine:3.22
 WORKDIR /app
-RUN apk add --no-cache ca-certificates tzdata
+# apk upgrade: pick up security fixes published since the base image was built.
+RUN apk upgrade --no-cache && apk add --no-cache ca-certificates tzdata
 COPY --from=builder /app/informer /app/informer
 
 # Non-root user (repo convention: never run containers as root).
